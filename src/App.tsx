@@ -197,13 +197,22 @@ const Toast = ({ message, type, onClose }) => {
 };
 
 // --- Sub-components ---
-const Badge = ({ children, variant = "primary" }: { children: React.ReactNode; variant?: "primary" | "success" | "danger" | "warning" }) => {
-  const styles = {
+type BadgeVariant = "primary" | "success" | "danger" | "warning";
+
+const Badge = ({
+  children,
+  variant = "primary",
+}: {
+  children: React.ReactNode;
+  variant?: BadgeVariant;
+}) => {
+  const styles: Record<BadgeVariant, string> = {
     primary: "bg-indigo-500/10 text-indigo-400",
     success: "bg-emerald-500/10 text-emerald-400",
     danger: "bg-rose-500/10 text-rose-400",
     warning: "bg-amber-500/10 text-amber-400",
   };
+
   return (
     <span
       className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${styles[variant]}`}
