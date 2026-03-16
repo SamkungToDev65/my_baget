@@ -197,7 +197,7 @@ const Toast = ({ message, type, onClose }) => {
 };
 
 // --- Sub-components ---
-const Badge = ({ children, variant = "primary" }) => {
+const Badge = ({ children, variant = "primary" }: { children: React.ReactNode; variant?: "primary" | "success" | "danger" | "warning" }) => {
   const styles = {
     primary: "bg-indigo-500/10 text-indigo-400",
     success: "bg-emerald-500/10 text-emerald-400",
