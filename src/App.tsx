@@ -12,9 +12,6 @@ import {
   ArrowDownLeft,
   Wallet,
   PieChart,
-  Settings,
-  Moon,
-  Sun,
   Trash2,
   TrendingUp,
   X,
@@ -22,25 +19,11 @@ import {
   History as HistoryIcon,
   ShoppingCart,
   Clock,
-  ChevronRight,
   AlertCircle,
   PiggyBank,
-  Zap,
-  Target,
-  Bell,
-  Calendar as CalendarIcon,
-  ChevronDown,
-  CreditCard,
-  Layers,
-  Sparkles,
-  CheckCircle2,
-  Filter,
-  ArrowRightLeft,
-  Search,
-  MoreVertical,
-  Activity,
-  ArrowRight,
   Check,
+  ChevronDown,
+  Activity,
 } from "lucide-react";
 import {
   XAxis,
@@ -61,6 +44,38 @@ import { motion, AnimatePresence } from "framer-motion";
  */
 
 const API_BASE = "https://api-bun-elysia.vercel.app";
+
+interface User {
+  person_code: string;
+  balance?: number;
+}
+
+// --- Types ---
+interface Transaction {
+  id: string;
+  amount: number;
+  type: "income" | "expense";
+  category: string;
+  date: string;
+  note?: string;
+  commitmentId?: string;
+}
+
+interface Commitment {
+  id: string;
+  title: string;
+  targetAmount: number;
+  currentAmount?: number;
+  type: "lend" | "installment";
+  person?: string;
+  category: string;
+}
+
+interface ToastItem {
+  id: number;
+  message: string;
+  type: string;
+}
 
 // --- Global Styles Hook ---
 const useArchitecturalStyles = () => {
@@ -172,7 +187,7 @@ const useArchitecturalStyles = () => {
 };
 
 // --- Toast Component ---
-const Toast = ({ message, type, onClose }) => {
+const Toast = ({ message, type, onClose }: { message: string; type: string; onClose: () => void }) => {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
     return () => clearTimeout(timer);
@@ -222,7 +237,7 @@ const Badge = ({
   );
 };
 
-const TransactionItem = ({ tx, onDelete }) => {
+const TransactionItem = ({ tx, onDelete }: { tx: Transaction; onDelete: (id: string) => void }) => {
   const months = [
     "ม.ค.",
     "ก.พ.",
@@ -251,7 +266,7 @@ const TransactionItem = ({ tx, onDelete }) => {
     "การยืม/ผ่อน": { icon: "💳", color: "bg-slate-500/10 text-slate-400" },
   };
 
-  const info = catMap[tx.category] || {
+  const info = catMap[tx.category as keyof typeof catMap] || {
     icon: "💸",
     color: "bg-slate-500/10 text-slate-400",
   };
@@ -305,18 +320,18 @@ const TransactionItem = ({ tx, onDelete }) => {
 // --- Main App ---
 export default function App() {
   useArchitecturalStyles();
-  const dateInputRef = useRef(null);
-  const fpRef = useRef(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+  const fpRef = useRef<any>(null);
 
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalType, setModalType] = useState("transaction");
   const [isLoading, setIsLoading] = useState(true);
-  const [toasts, setToasts] = useState([]);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  const [transactions, setTransactions] = useState([]);
-  const [commitments, setCommitments] = useState([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [commitments, setCommitments] = useState<Commitment[]>([]);
 
   const [newTx, setNewTx] = useState({
     amount: "",
@@ -335,12 +350,12 @@ export default function App() {
     category: "การยืม/ผ่อน",
   });
 
-  const addToast = (message, type = "success") => {
+  const addToast = (message: string, type: string = "success") => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, type }]);
   };
 
-  const removeToast = (id) => {
+  const removeToast = (id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
@@ -405,7 +420,7 @@ export default function App() {
             altFormat: "j F Y",
             defaultDate: newTx.date,
             disableMobile: true,
-            onChange: (_, ds) => setNewTx((p) => ({ ...p, date: ds })),
+            onChange: (_: any, ds: string) => setNewTx((p) => ({ ...p, date: ds })),
           });
         }
       }, 400); // Wait for modal animation
@@ -417,7 +432,7 @@ export default function App() {
   }, [showAddModal, modalType]);
 
   // Actions
-  const handleAddTransaction = async (e) => {
+  const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTx.amount) return;
     try {
@@ -446,7 +461,7 @@ export default function App() {
     }
   };
 
-  const handleAddCommitment = async (e) => {
+  const handleAddCommitment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCm.targetAmount || !currentUser) return;
     try {
@@ -478,7 +493,7 @@ export default function App() {
     }
   };
 
-  const deleteTransaction = async (id) => {
+  const deleteTransaction = async (id: string) => {
     if (!window.confirm("คุณต้องการลบธุรกรรมนี้ใช่หรือไม่?")) return;
     try {
       const res = await fetch(`${API_BASE}/bank-api/transactions/${id}`, {
@@ -495,14 +510,14 @@ export default function App() {
     }
   };
 
-  const deleteCommitment = async (id) => {
+  const deleteCommitment = async (id: string) => {
     if (
       !window.confirm("ยืนยันลบรายการติดตาม? ยอดที่เหลือจะถูกปรับปรุงเข้าบัญชี")
     )
       return;
     try {
       const res = await fetch(
-        `${API_BASE}/bank-api/commitments/${currentUser.person_code}/${id}`,
+        `${API_BASE}/bank-api/commitments/${currentUser?.person_code}/${id}`,
         { method: "DELETE" },
       );
       if (res.ok) {
@@ -527,26 +542,6 @@ export default function App() {
       .filter((t) => t.category === "เงินเก็บ")
       .reduce((s, c) => s + (Number(c.amount) || 0), 0);
     return { inc, exp, sav };
-  }, [transactions]);
-
-  const chartData = useMemo(() => {
-    const days = [...Array(7)]
-      .map((_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        return d.toISOString().split("T")[0];
-      })
-      .reverse();
-    return days.map((date) => {
-      const dayVal = transactions
-        .filter((t) => t.date === date)
-        .reduce(
-          (a, c) =>
-            a + (c.type === "income" ? Number(c.amount) : -Number(c.amount)),
-          0,
-        );
-      return { name: date.split("-")[2], val: dayVal };
-    });
   }, [transactions]);
 
   if (isLoading)
